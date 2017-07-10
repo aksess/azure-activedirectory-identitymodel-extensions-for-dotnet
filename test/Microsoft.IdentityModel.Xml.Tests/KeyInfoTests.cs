@@ -79,9 +79,9 @@ namespace Microsoft.IdentityModel.Xml.Tests
                     {
                         ExpectedException = new ExpectedException(typeof(XmlReadException), "IDX21011:"),
                         First = true,
-                        KeyInfo = ReferenceXml.KeyInfoWrongNameSpace.KeyInfo,
-                        TestId = nameof(ReferenceXml.KeyInfoWrongNameSpace),
-                        Xml = ReferenceXml.KeyInfoWrongNameSpace.Xml,
+                        KeyInfo = ReferenceXml.KeyInfoWrongNamespace.KeyInfo,
+                        TestId = nameof(ReferenceXml.KeyInfoWrongNamespace),
+                        Xml = ReferenceXml.KeyInfoWrongNamespace.Xml,
                     },
                     new KeyInfoTheoryData
                     {
@@ -177,5 +177,4 @@ namespace Microsoft.IdentityModel.Xml.Tests
 
         public KeyInfo KeyInfo { get; set; }
     }
-
 }

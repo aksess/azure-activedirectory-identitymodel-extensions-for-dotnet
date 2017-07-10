@@ -39,12 +39,12 @@ namespace Microsoft.IdentityModel.Xml
             get { return false; }
         }
 
-        internal abstract object Process(XmlTokenStreamReader input);
+        public abstract object Process(XmlTokenStreamReader input);
 
-        internal abstract byte[] ProcessAndDigest(XmlTokenStreamReader input, HashAlgorithm hash);
+        public abstract byte[] ProcessAndDigest(XmlTokenStreamReader input, HashAlgorithm hash);
 
-        public abstract void ReadFrom(XmlDictionaryReader reader, bool preserveComments);
+        public abstract void ReadFrom(XmlReader reader, bool preserveComments);
 
-        public abstract void WriteTo(XmlDictionaryWriter writer);
+        public abstract void WriteTo(XmlWriter writer);
     }
 }

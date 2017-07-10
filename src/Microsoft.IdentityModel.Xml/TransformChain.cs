@@ -33,7 +33,7 @@ using static Microsoft.IdentityModel.Logging.LogHelper;
 
 namespace Microsoft.IdentityModel.Xml
 {
-    public class TransformChain
+    internal class TransformChain
     {
         private string _prefix = XmlSignatureConstants.Prefix;
 
@@ -74,11 +74,11 @@ namespace Microsoft.IdentityModel.Xml
             }
         }
 
-        public virtual void ReadFrom(XmlDictionaryReader reader, bool preserveComments)
+        public virtual void ReadFrom(XmlReader reader, bool preserveComments)
         {
             // <Transforms>
             XmlUtil.CheckReaderOnEntry(reader, XmlSignatureConstants.Elements.Transforms, XmlSignatureConstants.Namespace);
-            reader.MoveToStartElement(XmlSignatureConstants.Elements.Transforms, XmlSignatureConstants.Namespace);
+
             _prefix = reader.Prefix;
             reader.Read();
 
@@ -122,7 +122,7 @@ namespace Microsoft.IdentityModel.Xml
             return this[Count - 1].ProcessAndDigest(tokenStreamReader, hash);
         }
 
-        public void WriteTo(XmlDictionaryWriter writer)
+        public void WriteTo(XmlWriter writer)
         {
             if (writer == null)
                 LogArgumentNullException(nameof(writer));

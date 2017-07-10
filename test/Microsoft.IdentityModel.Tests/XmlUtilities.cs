@@ -25,9 +25,9 @@
 //
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
+using System;
 using System.IO;
-using System.Text;
+using System.Security.Cryptography;
 using System.Xml;
 using Microsoft.IdentityModel.Xml;
 
@@ -40,9 +40,22 @@ namespace Microsoft.IdentityModel.Tests
             return XmlDictionaryReader.CreateDictionaryReader(XmlReader.Create(new StringReader(xml)));
         }
 
+        public static EnvelopedSignatureReader CreateEnvelopedSignatureReader(string xml)
+        {
+            return new EnvelopedSignatureReader(XmlDictionaryReader.CreateDictionaryReader(XmlReader.Create(new StringReader(xml))));
+        }
+
         public static XmlTokenStreamReader CreateXmlTokenStreamReader(string xml)
         {
             return new XmlTokenStreamReader(XmlDictionaryReader.CreateDictionaryReader(XmlReader.Create(new StringReader(xml))));
+        }
+
+        public static byte[] CreateDigestBytes(string xml)
+        {
+            var stream = new MemoryStream();
+            ExclusiveCanonicalizationTransform.WriteCanonicalStream(stream, CreateXmlTokenStreamReader(xml), false, null);
+            var hashAlg = SHA256.Create();
+            return hashAlg.ComputeHash(stream);
         }
     }
 }

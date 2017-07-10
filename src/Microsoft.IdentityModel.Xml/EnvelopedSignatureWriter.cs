@@ -33,14 +33,12 @@ using System.Xml;
 using Microsoft.IdentityModel.Tokens;
 using static Microsoft.IdentityModel.Logging.LogHelper;
 
-// TODO - this is not working at all for core.
-// just commented out code so it will compile.
 namespace Microsoft.IdentityModel.Xml
 {
     /// <summary>
     /// Wraps a writer and generates a signature automatically when the envelope
     /// is written completely. By default the generated signature is inserted as
-    /// the last element in the envelope. This can be modified by explicitily 
+    /// the last element in the envelope. This can be modified by explicitly
     /// calling WriteSignature to indicate the location inside the envelope where
     /// the signature should be inserted.
     /// </summary>
@@ -72,18 +70,12 @@ namespace Microsoft.IdentityModel.Xml
         /// <exception cref="ArgumentNullException">The parameter 'referenceId' is empty.</exception>
         public EnvelopedSignatureWriter(XmlWriter innerWriter, SigningCredentials signingCredentials, string referenceId)
         {
-            if (innerWriter == null)
-                throw LogArgumentNullException(nameof(innerWriter));
-
-            if (signingCredentials == null)
-                throw LogArgumentNullException(nameof(signingCredentials));
-
             if (string.IsNullOrEmpty(referenceId))
                 throw LogArgumentNullException(nameof(referenceId));
 
             // the Signature will be written into the innerWriter.
-            _innerWriter = innerWriter;
-            _signingCredentials = signingCredentials;
+            _innerWriter = innerWriter ?? throw LogArgumentNullException(nameof(innerWriter));
+            _signingCredentials = signingCredentials ?? throw LogArgumentNullException(nameof(signingCredentials));
             _referenceId = referenceId;
             _endFragment = new MemoryStream();
             _signatureFragment = new MemoryStream();

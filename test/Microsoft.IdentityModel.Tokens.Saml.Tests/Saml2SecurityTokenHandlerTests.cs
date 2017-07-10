@@ -232,9 +232,6 @@ namespace Microsoft.IdentityModel.Tokens.Saml.Tests
             }
         }
 
-        /// <summary>
-        /// Canoncalizing reader is not yet supported in .net core
-        /// </summary>
         public static TheoryData<SamlTheoryData> ValidateTokenTheoryData
         {
             get

@@ -49,7 +49,7 @@ namespace Microsoft.IdentityModel.Xml.Tests
                 if (signedInfo.Reference != null)
                     errors.Add("signedInfo.Reference != null");
 
-                if (!string.IsNullOrEmpty(signedInfo.SignatureAlgorithm))
+                if (!string.IsNullOrEmpty(signedInfo.SignatureMethod))
                     errors.Add("!string.IsNullOrEmpty(signedInfo.SignatureAlgorithm)");
 
                 theoryData.ExpectedException.ProcessNoException();
@@ -88,13 +88,10 @@ namespace Microsoft.IdentityModel.Xml.Tests
             var errors = new List<string>();
             try
             {
-                var sr = new StringReader(theoryData.Xml);
-                var reader = XmlDictionaryReader.CreateDictionaryReader(XmlReader.Create(sr));
-                var signedInfo = new SignedInfo();
-                signedInfo.ReadFrom(reader);
+                var signedInfo = new SignedInfo(XmlUtilities.CreateDictionaryReader(theoryData.Xml));
                 theoryData.ExpectedException.ProcessNoException(context.Diffs);
                 if (theoryData.ExpectedException.TypeExpected == null)
-                    IdentityComparer.AreEqual(signedInfo, theoryData.SignedInfo, context);
+                    IdentityComparer.AreSignedInfosEqual(signedInfo, theoryData.SignedInfo, context);
             }
             catch (Exception ex)
             {

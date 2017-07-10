@@ -141,7 +141,7 @@ namespace Microsoft.IdentityModel.Xml
         {
             XmlUtil.ValidateBufferBounds(buffer, offset, count);
 
-            // Concatentate text nodes to get entire element value before attempting to convert
+            // Concatenate text nodes to get entire element value before attempting to convert
             // XmlDictionaryReader.CreateDictionaryReader(XmlReader) creates a reader that returns base64 in a single text node
             // XmlDictionaryReader.CreateTextReader(Stream) creates a reader that produces multiple text and whitespace nodes
             // Attribute nodes consist of only a single value

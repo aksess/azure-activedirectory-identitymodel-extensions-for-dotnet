@@ -41,38 +41,35 @@ namespace Microsoft.IdentityModel.Xml
             Algorithm = XmlSignatureConstants.Algorithms.EnvelopedSignature;
         }
 
-        internal override object Process(XmlTokenStreamReader reader)
+        public override object Process(XmlTokenStreamReader reader)
         {
             if (reader == null)
                 LogArgumentNullException(nameof(reader));
 
-            // The Enveloped Signature Transform is supposed to remove the
-            // Signature which encloses the transform element. Previous versions
-            // of this code stripped out all Signature elements at any depth,
-            // which did not allow nested signed structures. By specifying '1'
-            // as the depth, we narrow our range of support so that we require
-            // that the enveloped signature be a direct child of the element
-            // being signed.
+            // The Enveloped Signature Transform removes the Signature element from the canonicalized octets
+            // Specifying '1' as the depth, we narrow our range of support so that we require
+            // the signature be a direct child of the element being signed.
             reader.XmlTokens.SetElementExclusion(XmlSignatureConstants.Elements.Signature, XmlSignatureConstants.Namespace, 1);
             return reader;
         }
 
         // this transform is not allowed as the last one in a chain
-        internal override byte[] ProcessAndDigest(XmlTokenStreamReader reader, HashAlgorithm hash)
+        public override byte[] ProcessAndDigest(XmlTokenStreamReader reader, HashAlgorithm hash)
         {
             throw LogExceptionMessage(new NotSupportedException("UnsupportedLastTransform"));
         }
 
-        public override void ReadFrom(XmlDictionaryReader reader, bool preserveComments)
+        public override void ReadFrom(XmlReader reader, bool preserveComments)
         {
             reader.MoveToContent();
             string algorithm = XmlUtil.ReadEmptyElementAndRequiredAttribute(reader,
                 XmlSignatureConstants.Elements.Transform, XmlSignatureConstants.Namespace, XmlSignatureConstants.Attributes.Algorithm, out _prefix);
+
             if (algorithm != Algorithm)
                 throw LogExceptionMessage(new CryptographicException("AlgorithmMismatchForTransform"));
         }
 
-        public override void WriteTo(XmlDictionaryWriter writer)
+        public override void WriteTo(XmlWriter writer)
         {
             writer.WriteStartElement(_prefix, XmlSignatureConstants.Elements.Transform, XmlSignatureConstants.Namespace);
             writer.WriteAttributeString(XmlSignatureConstants.Attributes.Algorithm, null, Algorithm);

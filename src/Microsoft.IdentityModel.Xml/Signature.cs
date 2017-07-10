@@ -25,6 +25,7 @@
 //
 //------------------------------------------------------------------------------
 
+using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Xml;
@@ -41,9 +42,13 @@ namespace Microsoft.IdentityModel.Xml
         private string _prefix = XmlSignatureConstants.Prefix;
 
         // TODO - consider constructor without SignedInfo
-        public Signature(SignedInfo signedInfo)
+        public Signature()
         {
-            SignedInfo = signedInfo ?? throw LogArgumentNullException(nameof(signedInfo));
+        }
+
+        public Signature(XmlReader reader)
+        {
+            ReadFrom(reader);
         }
 
         public string Id { get; set; }
@@ -52,36 +57,31 @@ namespace Microsoft.IdentityModel.Xml
 
         public string SignatureValue { get; set; }
 
-        public SignedInfo SignedInfo
-        {
-            get;
-        }
+        public SignedInfo SignedInfo { get; set; }
 
         internal void ComputeSignature(SigningCredentials credentials)
         {
-            var hash = credentials.Key.CryptoProviderFactory.CreateHashAlgorithm(credentials.Digest);
-            SignedInfo.ComputeReferenceDigests();
-            SignatureBytes = SignedInfo.ComputeHashBytes(hash);
+            var signedInfo = new PreDigestedSignedInfo(XmlSignatureConstants.Algorithms.ExcC14N, credentials.Digest, credentials.Algorithm);
+//            var hash = credentials.Key.CryptoProviderFactory.CreateHashAlgorithm(credentials.Digest);
+//            SignedInfo.ComputeReferenceDigests();
+//            SignatureBytes = SignedInfo.ComputeHashBytes(hash);
         }
 
         public byte[] SignatureBytes { get; set; }
 
-        // TODO - should this be an XmlTokenStreamReader?
-        public void ReadFrom(XmlDictionaryReader reader)
+        private void ReadFrom(XmlReader reader)
         {
             XmlUtil.CheckReaderOnEntry(reader, XmlSignatureConstants.Elements.Signature, XmlSignatureConstants.Namespace);
 
-            reader.MoveToStartElement(XmlSignatureConstants.Elements.Signature, XmlSignatureConstants.Namespace);
             _prefix = reader.Prefix;
             Id = reader.GetAttribute(XmlSignatureConstants.Attributes.Id, null);
             reader.Read();
 
-            SignedInfo.ReadFrom(reader);
+            SignedInfo = new SignedInfo(reader);
             reader.MoveToContent();
             SignatureValue = reader.ReadElementContentAsString().Trim();
             SignatureBytes = System.Convert.FromBase64String(SignatureValue);
-            KeyInfo = new KeyInfo();
-            KeyInfo.ReadFrom(reader);
+            KeyInfo = new KeyInfo(reader);
 
             // </Signature>
             reader.MoveToContent();
@@ -95,17 +95,19 @@ namespace Microsoft.IdentityModel.Xml
             if (key == null)
                 throw LogArgumentNullException(nameof(key));
 
-            var signatureProvider = key.CryptoProviderFactory.CreateForVerifying(key, SignedInfo.SignatureAlgorithm);
+            var signatureProvider = key.CryptoProviderFactory.CreateForVerifying(key, SignedInfo.SignatureMethod);
             if (signatureProvider == null)
-                throw LogExceptionMessage(new XmlValidationException(FormatInvariant(LogMessages.IDX21203, key.CryptoProviderFactory, key, SignedInfo.SignatureAlgorithm)));
+                throw LogExceptionMessage(new XmlValidationException(FormatInvariant(LogMessages.IDX21203, key.CryptoProviderFactory, key, SignedInfo.SignatureMethod)));
 
             try
             {
-                var memoryStream = new MemoryStream();
-                SignedInfo.GetCanonicalBytes(memoryStream);
+                using (var memoryStream = new MemoryStream())
+                {
+                    SignedInfo.GetCanonicalBytes(memoryStream);
 
-                if (!signatureProvider.Verify(SignedInfo.CanonicalStream.ToArray(), SignatureBytes))
-                    throw LogExceptionMessage(new CryptographicException(LogMessages.IDX21200));
+                    if (!signatureProvider.Verify(SignedInfo.CanonicalStream.ToArray(), SignatureBytes))
+                        throw LogExceptionMessage(new CryptographicException(LogMessages.IDX21200));
+                }
             }
             finally
             {
@@ -117,7 +119,7 @@ namespace Microsoft.IdentityModel.Xml
                 throw LogExceptionMessage(new CryptographicException(FormatInvariant(LogMessages.IDX21201, SignedInfo.Reference.Uri)));
         }
 
-        public virtual void WriteTo(XmlDictionaryWriter writer, SigningCredentials credentials)
+        public virtual void WriteTo(XmlWriter writer, SigningCredentials credentials)
         {
             if (writer == null)
                 LogArgumentNullException(nameof(writer));
@@ -125,7 +127,6 @@ namespace Microsoft.IdentityModel.Xml
             if (credentials == null)
                 LogArgumentNullException(nameof(credentials));
 
-            ComputeSignature(credentials);
 
             // <Signature>
             writer.WriteStartElement(_prefix, XmlSignatureConstants.Elements.Signature, XmlSignatureConstants.Namespace);
@@ -133,20 +134,27 @@ namespace Microsoft.IdentityModel.Xml
                 writer.WriteAttributeString(XmlSignatureConstants.Attributes.Id, null, Id);
 
             SignedInfo.WriteTo(writer);
-            //_signatureValueElement.WriteTo(writer);
+            var memoryStream = new MemoryStream();
+            var factory = credentials.CryptoProviderFactory ?? credentials.Key.CryptoProviderFactory;
+            SignedInfo.GetCanonicalBytes(memoryStream);
+            SignatureBytes = (factory.CreateForSigning(credentials.Key, credentials.Algorithm)).Sign(memoryStream.ToArray());
+            SignatureValue = Convert.ToBase64String(SignatureBytes);
 
             // <SignatureValue>
             writer.WriteStartElement(_prefix, XmlSignatureConstants.Elements.SignatureValue, XmlSignatureConstants.Namespace);
 
-            // TODO  need different id for SignatureValue
             // @Id
-            //if (Id != null)
-            //    writer.WriteAttributeString(XmlSignatureConstants.Attributes.Id, null, Id);
+            if (Id != null)
+                writer.WriteAttributeString(XmlSignatureConstants.Attributes.Id, null, Id);
 
-            writer.WriteBase64(SignatureBytes, 0, SignatureBytes.Length);
+            writer.WriteString(SignatureValue);
 
-             // </ SignatureValue>
+            // </ SignatureValue>
             writer.WriteEndElement();
+
+            // <KeyInfo>
+            KeyInfo = new KeyInfo(credentials.Key);
+            KeyInfo.WriteTo(writer);
 
             // </ Signature>
             writer.WriteEndElement();

@@ -35,7 +35,7 @@ namespace Microsoft.IdentityModel.Xml
 {
     /// <summary>
     /// Canonicalization algorithms are found in &lt;SignedInfo> and &lt;Transform>.
-    /// The elment name can be: CanonicalizationMethod or Transform the actions are the same.
+    /// The element name can be: CanonicalizationMethod or Transform the actions are the same.
     /// </summary>
     public class ExclusiveCanonicalizationTransform : Transform
     {
@@ -92,7 +92,7 @@ namespace Microsoft.IdentityModel.Xml
         }
 
         // multi-transform case, inefficient path
-        internal override object Process(XmlTokenStreamReader reader)
+        public override object Process(XmlTokenStreamReader reader)
         {
             if (reader == null)
                 throw LogArgumentNullException(nameof(reader));
@@ -100,7 +100,7 @@ namespace Microsoft.IdentityModel.Xml
             return CanonicalizationDriver.GetMemoryStream(reader, IncludeComments, _inclusivePrefixes);
         }
 
-        internal override byte[] ProcessAndDigest(XmlTokenStreamReader reader, HashAlgorithm hash)
+        public override byte[] ProcessAndDigest(XmlTokenStreamReader reader, HashAlgorithm hash)
         {
             if (reader == null)
                 LogArgumentNullException(nameof(reader));
@@ -108,12 +108,14 @@ namespace Microsoft.IdentityModel.Xml
             if (hash == null)
                 LogArgumentNullException(nameof(hash));
 
-            var stream = new MemoryStream();
-            reader.MoveToContent();
-            WriteCanonicalStream(stream, reader, IncludeComments, _inclusivePrefixes);
-            stream.Flush();
-            stream.Position = 0;
-            return hash.ComputeHash(stream);
+            using (var stream = new MemoryStream())
+            {
+                reader.MoveToContent();
+                WriteCanonicalStream(stream, reader, IncludeComments, _inclusivePrefixes);
+                stream.Flush();
+                stream.Position = 0;
+                return hash.ComputeHash(stream);
+            }
         }
 
         public static void WriteCanonicalStream(Stream canonicalStream, XmlTokenStreamReader reader, bool includeComments, string[] inclusivePrefixes)
@@ -148,7 +150,7 @@ namespace Microsoft.IdentityModel.Xml
 #endif
         }
 
-        public override void ReadFrom(XmlDictionaryReader reader, bool preserveComments)
+        public override void ReadFrom(XmlReader reader, bool preserveComments)
         {
             XmlUtil.CheckReaderOnEntry(reader, _elementName, XmlSignatureConstants.Namespace);
 
@@ -159,12 +161,7 @@ namespace Microsoft.IdentityModel.Xml
                 throw XmlUtil.LogReadException(LogMessages.IDX21013, XmlSignatureConstants.Elements.Signature, XmlSignatureConstants.Attributes.Algorithm);
 
             if (Algorithm == XmlSignatureConstants.ExclusiveC14nWithComments)
-            {
-                // to include comments in canonicalization, two conditions need to be met
-                // 1. the Reference must be an xpointer.
-                // 2. the transform must be #withComments
                 IncludeComments = preserveComments && true;
-            }
             else if (Algorithm == XmlSignatureConstants.ExclusiveC14n)
                 IncludeComments = false;
             else
@@ -172,12 +169,10 @@ namespace Microsoft.IdentityModel.Xml
 
             reader.Read();
             reader.MoveToContent();
-
             if (!isEmptyElement)
             {
                 if (reader.IsStartElement(ExclusiveC14NConstants.InclusiveNamespaces, ExclusiveC14NConstants.Namespace))
                 {
-                    reader.MoveToStartElement(ExclusiveC14NConstants.InclusiveNamespaces, ExclusiveC14NConstants.Namespace);
                     _inclusiveListElementPrefix = reader.Prefix;
                     bool emptyElement = reader.IsEmptyElement;
 
@@ -194,18 +189,20 @@ namespace Microsoft.IdentityModel.Xml
             }
         }
 
-        public override void WriteTo(XmlDictionaryWriter writer)
+        public override void WriteTo(XmlWriter writer)
         {
             writer.WriteStartElement(_prefix, _elementName, XmlSignatureConstants.Namespace);
             writer.WriteAttributeString(XmlSignatureConstants.Attributes.Algorithm, null, Algorithm);
             if (InclusiveNamespacesPrefixList != null)
             {
+                // <InclusiveNamespaces>
                 writer.WriteStartElement(_inclusiveListElementPrefix, ExclusiveC14NConstants.InclusiveNamespaces, ExclusiveC14NConstants.Namespace);
                 writer.WriteAttributeString(ExclusiveC14NConstants.PrefixList, null, InclusiveNamespacesPrefixList);
-                writer.WriteEndElement(); // InclusiveNamespaces
+                writer.WriteEndElement();
             }
 
-            writer.WriteEndElement(); // Transform
+            // </Transform>
+            writer.WriteEndElement();
         }
 
         static string[] TokenizeInclusivePrefixList(string prefixList)
@@ -214,6 +211,7 @@ namespace Microsoft.IdentityModel.Xml
             {
                 return null;
             }
+
             string[] prefixes = prefixList.Split(null);
             int count = 0;
             for (int i = 0; i < prefixes.Length; i++)

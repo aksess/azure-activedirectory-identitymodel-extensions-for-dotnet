@@ -27,7 +27,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using System.Xml;
 using Microsoft.IdentityModel.Tokens.Saml;
 using Microsoft.IdentityModel.Xml;
 
@@ -120,7 +122,6 @@ namespace Microsoft.IdentityModel.Tests
 
             return $"NotOnOrAfter = \"{notOnOrAfter}\"";
         }
-
 
         public static string SamlActionTemplate
         {
@@ -215,12 +216,24 @@ namespace Microsoft.IdentityModel.Tests
 
         public static string Generate(Signature signature)
         {
-            return string.Format(SignatureTemplate, XmlSignatureConstants.Namespace, Generate(signature.SignedInfo), signature.SignatureValue, Generate(signature.KeyInfo));
+            var memoryStream = new MemoryStream();
+            var writer = XmlDictionaryWriter.CreateTextWriter(memoryStream, Encoding.UTF8, false);
+            signature.WriteTo(writer, Default.AsymmetricSigningCredentials);
+            writer.Flush();
+
+            var retval = Encoding.UTF8.GetString(memoryStream.ToArray());
+            return retval;
         }
 
         public static string Generate(SignedInfo signedInfo)
         {
-            return string.Format(SignedInfoTemplate, XmlSignatureConstants.Namespace, signedInfo.CanonicalizationMethod, signedInfo.SignatureAlgorithm, ReferenceXml(signedInfo.Reference));
+            var memoryStream = new MemoryStream();
+            var writer = XmlDictionaryWriter.CreateTextWriter(memoryStream, Encoding.UTF8, false);
+            signedInfo.WriteTo(writer);
+            writer.Flush();
+
+            var retval = Encoding.UTF8.GetString(memoryStream.ToArray());
+            return retval;
         }
 
         public static string ReferenceTemplate
@@ -236,7 +249,13 @@ namespace Microsoft.IdentityModel.Tests
         // Always assumes two transforms
         public static string ReferenceXml(Reference reference)
         {
-            return string.Format(ReferenceTemplate, reference.Uri, reference.TransformChain[0].Algorithm, reference.TransformChain[1].Algorithm, reference.DigestAlgorithm, reference.DigestText);
+            var memoryStream = new MemoryStream();
+            var writer = XmlDictionaryWriter.CreateTextWriter(memoryStream, Encoding.UTF8, false);
+            reference.WriteTo(writer);
+            writer.Flush();
+
+            var retval = Encoding.UTF8.GetString(memoryStream.ToArray());
+            return retval;
         }
 
         public static string RoleDescriptorTemplate

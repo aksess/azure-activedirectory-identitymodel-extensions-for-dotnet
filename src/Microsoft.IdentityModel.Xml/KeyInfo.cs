@@ -28,6 +28,7 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
+using Microsoft.IdentityModel.Tokens;
 using static Microsoft.IdentityModel.Logging.IdentityModelEventSource;
 using static Microsoft.IdentityModel.Logging.LogHelper;
 
@@ -43,7 +44,29 @@ namespace Microsoft.IdentityModel.Xml
         /// <summary>
         /// Instantiates a <see cref="Keyinfo"/>.
         /// </summary>
-        public KeyInfo() {}
+        public KeyInfo()
+        {
+        }
+
+        public KeyInfo(X509Certificate2 certificate)
+        {
+            CertificateData = Convert.ToBase64String(certificate.RawData);
+            Kid = certificate.Thumbprint;
+        }
+
+       public KeyInfo(SecurityKey key)
+        {
+            if (key is X509SecurityKey x509Key)
+            {
+                CertificateData = Convert.ToBase64String(x509Key.Certificate.RawData);
+                Kid = x509Key.Certificate.Thumbprint;
+            }
+        }
+
+        public KeyInfo(XmlReader reader)
+        {
+            ReadFrom(reader);
+        }
 
         /// <summary>
         /// Get the 'X509CertificateData' value
@@ -232,6 +255,25 @@ namespace Microsoft.IdentityModel.Xml
         {
             if (writer == null)
                 LogArgumentNullException(nameof(writer));
+
+            // <KeyInfo>
+            writer.WriteStartElement(XmlSignatureConstants.Elements.KeyInfo, XmlSignatureConstants.Namespace);
+
+            // TODO expand on Certs
+            if (!string.IsNullOrEmpty(CertificateData))
+            {
+                // <X509Data>
+                writer.WriteStartElement(XmlSignatureConstants.Elements.X509Data, XmlSignatureConstants.Namespace);
+
+                // <X509Certificate>...</X509Certificate>
+                writer.WriteElementString(XmlSignatureConstants.Elements.X509Certificate, XmlSignatureConstants.Namespace, CertificateData);
+
+                // </X509Data>
+                writer.WriteEndElement();
+            }
+
+            // </KeyInfo>
+            writer.WriteEndElement();
 
             // TODO serialize
         }

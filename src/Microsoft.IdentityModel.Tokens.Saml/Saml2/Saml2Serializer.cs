@@ -1535,7 +1535,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml2
             // We do not dispose this writer, since as a delegating writer it would
             // dispose the inner writer, which we don't properly own.
             EnvelopedSignatureWriter signatureWriter = null;
-            if (null != assertion.SigningCredentials)
+            if (assertion.SigningCredentials != null)
                 writer = signatureWriter = new EnvelopedSignatureWriter(writer, assertion.SigningCredentials, assertion.Id.Value);
 
             if (assertion.Subject == null)

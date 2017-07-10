@@ -64,7 +64,8 @@ namespace Microsoft.IdentityModel.Xml
         internal const string IDX21202 = "IDX21202: A reference was included: '{0}'.";
         internal const string IDX21203 = "IDX21203: '{0}.CreateForVerifying' returned null for key: '{1}', signatureAlgorithm: '{2}'.";
         internal const string IDX21204 = "IDX21204: 'Canonicalization algorithm is not supported: '{0}'.";
-        internal const string IDX21205 = "IDX21205: 'At least one reference is required";
+        internal const string IDX21205 = "IDX21205: 'At least one reference is required.";
+        internal const string IDX21206 = "IDX21206: 'The reference '{0}' did not contain a digest.";
 
         // logging messages
         internal const string IDX21300 = "IDX21300: KeyInfo skipped unknown element: '{0}'.";

@@ -109,8 +109,7 @@ namespace Microsoft.IdentityModel.Xml
 
         private void ReadSignature()
         {
-            Signature = new Signature(new SignedInfo());
-            Signature.ReadFrom(_tokenStreamingReader);
+            Signature = new Signature(_tokenStreamingReader);
             if (Signature.SignedInfo.Reference == null)
                 throw XmlUtil.LogReadException(LogMessages.IDX21101);
         }

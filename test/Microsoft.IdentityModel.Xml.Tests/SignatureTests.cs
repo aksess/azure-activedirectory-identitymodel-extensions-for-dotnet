@@ -44,7 +44,11 @@ namespace Microsoft.IdentityModel.Xml.Tests
             TestUtilities.WriteHeader($"{this}.SignatureConstructor", theoryData);
             try
             {
-                var signature = new Signature(theoryData.SignedInfo);
+                var signature = new Signature()
+                {
+                    SignedInfo = theoryData.SignedInfo
+                };
+
                 theoryData.ExpectedException.ProcessNoException();
             }
             catch (Exception ex)
@@ -61,7 +65,6 @@ namespace Microsoft.IdentityModel.Xml.Tests
                 {
                     new SignatureTheoryData
                     {
-                        ExpectedException = ExpectedException.ArgumentNullException("IDX10000:"),
                         First = true,
                         SignedInfo = null,
                         TestId = "SignedInfo NULL"
@@ -79,12 +82,8 @@ namespace Microsoft.IdentityModel.Xml.Tests
             var context = new CompareContext($"{this}.SignatureReadFrom, {theoryData.TestId}");
             try
             {
-                var sr = new StringReader(theoryData.Xml);
-                var reader = XmlDictionaryReader.CreateDictionaryReader(XmlReader.Create(sr));
-                var signature = new Signature(new SignedInfo());
-                signature.ReadFrom(reader);
+                var signature = new Signature(XmlUtilities.CreateDictionaryReader(theoryData.Xml));
                 theoryData.ExpectedException.ProcessNoException();
-
                 IdentityComparer.AreEqual(signature, theoryData.Signature, context);
             }
             catch (Exception ex)
@@ -100,7 +99,7 @@ namespace Microsoft.IdentityModel.Xml.Tests
             get
             {
                 // uncomment to view exception displayed to user
-                // ExpectedException.DefaultVerbose = true;
+                ExpectedException.DefaultVerbose = true;
 
                 return new TheoryData<SignatureTheoryData>
                 {
@@ -130,10 +129,9 @@ namespace Microsoft.IdentityModel.Xml.Tests
             var context = new CompareContext($"{this}.SignatureVerify, {theoryData.TestId}");
             try
             {
-                var tokenStreamingReader = XmlUtilities.CreateXmlTokenStreamReader(theoryData.Xml);
-                var signature = new Signature(new SignedInfo());
-                signature.ReadFrom(tokenStreamingReader);
-                signature.TokenSource = tokenStreamingReader;
+                var reader = XmlUtilities.CreateDictionaryReader(theoryData.Xml);
+                var signature = new Signature(reader);
+                signature.TokenSource = theoryData.Signature.TokenSource;
                 signature.Verify(theoryData.SecurityKey);
                 theoryData.ExpectedException.ProcessNoException();
 
@@ -155,6 +153,14 @@ namespace Microsoft.IdentityModel.Xml.Tests
                 // ExpectedException.DefaultVerbose = true;
 
                 var theoryData = new TheoryData<SignatureTheoryData>();
+
+                theoryData.Add(new SignatureTheoryData
+                {
+                    SecurityKey = Default.AsymmetricSigningKey,
+                    Signature = ReferenceXml.DefaultSignature.Signature,
+                    TestId = nameof(ReferenceXml.DefaultSignature),
+                    Xml = ReferenceXml.DefaultSignature.Xml
+                });
 
                 // use SecurityKey that will validate the SignedInfo
                 var key  = ReferenceXml.DefaultAADSigningKey;

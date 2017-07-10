@@ -57,7 +57,7 @@ namespace Microsoft.IdentityModel.Xml
 
             CanonicalizationMethod = canonicalizationMethod;
             DigestMethod = digestMethod;
-            SignatureAlgorithm = signatureAlgorithm;
+            SignatureMethod = signatureAlgorithm;
         }
 
         public string DigestMethod { get; private set; }
@@ -77,20 +77,19 @@ namespace Microsoft.IdentityModel.Xml
             // all digests pre-computed
         }
 
-        public override void ReadFrom(XmlDictionaryReader reader)
+        public override void ReadFrom(XmlReader reader)
         {
             // WriteOnly
             throw LogExceptionMessage(new NotSupportedException());
         }
 
         internal override void EnsureReferenceVerified()
-
         {
             // WriteOnly
             throw LogExceptionMessage(new NotSupportedException());
         }
 
-        public override void WriteTo(XmlDictionaryWriter writer)
+        public override void WriteTo(XmlWriter writer)
         {
             writer.WriteStartElement(Prefix, XmlSignatureConstants.Elements.SignedInfo, XmlSignatureConstants.Namespace);
             if (!string.IsNullOrEmpty(Id))
