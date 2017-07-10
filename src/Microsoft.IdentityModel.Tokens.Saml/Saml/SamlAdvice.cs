@@ -84,7 +84,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml
         /// </summary>
         public ICollection<string> AssertionIdReferences
         {
-            get;
+            get; set;
         }
 
 
@@ -93,7 +93,7 @@ namespace Microsoft.IdentityModel.Tokens.Saml
         /// </summary>
         public ICollection<SamlAssertion> Assertions
         {
-            get;
+            get; set;
         }
     }
 }
